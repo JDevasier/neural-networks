@@ -3,38 +3,42 @@ import math
 
 D = 0
 N = 0
-
+Classes = 0
+U = 0
 
 class layer:
     perceptrons = []
-
+    def __init__(self):
+        self.perceptrons = []
 
 
 class perceptron:
-    num_inputs = 0
-    bias = 1
-    w = 0
 
     def __init__(self):
-        global D
+        global D, U
         self.num_inputs = D + 1
         self.w = np.random.uniform(low=-0.05, high=0.05, size=(self.num_inputs,))
+        self.z = 0
+        self.a = 0
+        self.delta = 0
+        self.bias = 1
 
-    def a(self, x):
+    def _a(self, x):
         return np.dot(self.w, x)
 
-    def z(self, x):
+    def _z(self, x):
         x = np.insert(x, 0, 1)
-        return self.h(self.a(x))
+        return self._h(self._a(x))
 
-    def h(self, a):
-        return a
+    def _h(self, a):
+        return 1 / (1 + math.exp(-a))
 
 
 def main():
     training_file = "pendigits_training.txt"
     test_file = "pendigits_test.txt"
-    neural_network(training_file, test_file, 0, 0, 0)
+
+    neural_network(training_file, test_file, 6, 15, 1)
 
 # layers - number of layers to use
 # units per layer - units per HIDDEN layer exlcuding bias input
@@ -44,6 +48,8 @@ def main():
 
 
 def neural_network(training_file, test_file, layers, units_per_layer, rounds):
+    learning_rate = 1
+
     training_data = np.asarray(read_file(training_file))
     test_data = np.asarray(read_file(test_file))
 
@@ -53,13 +59,49 @@ def neural_network(training_file, test_file, layers, units_per_layer, rounds):
     n_train_data = normalize(training_data[:,:-1])
     n_test_data = normalize(test_data[:,:-1])
 
-    global D, N
+    global D, N, Classes, U
     D = np.shape(training_data)[1] - 1
     N = np.shape(training_data)[0]
+    Classes = len(np.unique(training_labels))
 
-    p = perceptron()
+    P = generateLayers(layers, units_per_layer)
 
-    print(p.z(n_train_data[0]))
+    for r in range(rounds):
+        for n in range(1):#len(n_train_data)):
+            x = n_train_data[n]
+            
+            for j in range(D):
+                P[0].perceptrons[j].z = x[j]
+            
+            print(print(vars(P[0].perceptrons[0])))
+
+def generateLayers(layers, units_per_layer):
+    global D, Classes, U
+    P = []
+    #add input layer
+    l1 = layer()
+    for i in range(D):
+        U += 1
+        _p = perceptron()
+        _p.bias = 0
+        l1.perceptrons.append(_p)
+        
+    P.append(l1)
+
+    #add hidden layers
+    for i in range(layers-2):
+        lay = layer()
+        for _ in range(units_per_layer):
+            U += 1
+            lay.perceptrons.append(perceptron())
+        P.append(lay)
+
+    ln = layer()
+    for i in range(Classes):
+        U += 1
+        ln.perceptrons.append(perceptron())
+    P.append(ln)
+    return P
 
 
 def normalize(arr):
