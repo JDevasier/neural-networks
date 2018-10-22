@@ -73,7 +73,6 @@ def neural_network(training_file, test_file, layers, units_per_layer, rounds):
             for j in range(D):
                 P[0].perceptrons[j].z = x[j]
             
-            print(print(vars(P[0].perceptrons[0])))
 
 def generateLayers(layers, units_per_layer):
     global D, Classes, U

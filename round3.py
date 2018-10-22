@@ -8,8 +8,6 @@ U = 0
 
 
 class layer:
-    perceptrons = []
-
     def __init__(self):
         self.perceptrons = []
 
@@ -37,7 +35,7 @@ def main():
     training_file = "pendigits_training.txt"
     test_file = "pendigits_test.txt"
 
-    neural_network(training_file, test_file, 6, 15, 5)
+    neural_network(training_file, test_file, 3, 10, 1)
 
 # layers - number of layers to use
 # units per layer - units per HIDDEN layer exlcuding bias input
@@ -83,7 +81,6 @@ def neural_network(training_file, test_file, layers, units_per_layer, rounds):
                     P_j.z = P_j._h(P_j.a)
 
             for j, P_out_j in enumerate(P[-1].perceptrons):
-                #print(P_out_j.z, t_train[n])
                 P_out_j.delta = (
                     P_out_j.z - t_train[n][j]) * P_out_j.z * (1-P_out_j.z)
 
