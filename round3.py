@@ -36,7 +36,7 @@ def main():
     training_file = "pendigits_training.txt"
     test_file = "pendigits_test.txt"
 
-    neural_network(training_file, test_file, 3, 20, 5)
+    neural_network(training_file, test_file, 3, 20, 1)
 
 # layers - number of layers to use
 # units per layer - units per HIDDEN layer exlcuding bias input
@@ -112,10 +112,9 @@ def neural_network(training_file, test_file, layers, units_per_layer, rounds):
                         P_j.w[i] -= learning_rate * P_j.delta * P_i.z
 
         learning_rate *= 0.98
-    print("finished learning")
 
     acc = 0
-    for n in range(100):
+    for n in range(len(n_test_data)):
         x = n_test_data[n]
         np.insert(x, 0, 1)
 
@@ -126,10 +125,16 @@ def neural_network(training_file, test_file, layers, units_per_layer, rounds):
             if p.z > M[0]:
                 M = (p.z, i)
 
+        this_acc = 0
+
         if M[1] == training_labels[n]:
             acc += 1
+            this_acc = 1
 
-    print("Acc: ", acc / 100)
+        print("ID = {:5d}, predicted = {:3d}, true = {:3d}, accuracy = {:4.2f}".format(
+            int(n + 1), int(M[1]), int(training_labels[n]), float(this_acc)))
+
+    print("classification accuracy: {:6.4f}".format(acc / len(n_test_data)))
 
 
 def feed_forward(P, x):
