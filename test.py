@@ -1,12 +1,183 @@
 import numpy as np
+import math
 
-def sigmoid(x):
-    return 1.0/(1+ np.exp(-x))
+D = 0
+N = 0
+Classes = 0
+U = 0
 
-def sigmoid_derivative(x):
-    return x * (1.0 - x)
 
-    
+class layer:
+    def __init__(self):
+        self.perceptrons = []
+
+
+class perceptron:
+    def __init__(self, num_inputs):
+        self.w = np.random.uniform(
+            low=-0.05, high=0.05, size=(num_inputs,))
+        self.z = 0
+        self.a = 0
+        self.delta = 0
+
+    def _a(self, x):
+        return np.dot(self.w, x)
+
+    def _z(self, x):
+        x = np.insert(x, 0, 1)
+        return self._h(self._a(x))
+
+    def _h(self, a):
+        return 1 / (1 + math.exp(-a))
+
+
+def main():
+    training_file = "pendigits_training.txt"
+    test_file = "pendigits_test.txt"
+
+    neural_network(training_file, test_file, 3, 10, 1)
+
+# layers - number of layers to use
+# units per layer - units per HIDDEN layer exlcuding bias input
+# rounds - number of training rounds (using whole training set once)
+# number of perceptrons of output layer = number of classes
+# number of perceptrons of input layer = # of dimensions
+
+
+def neural_network(training_file, test_file, layers, units_per_layer, rounds):
+    learning_rate = 1
+
+    training_data = np.asarray(read_file(training_file))
+    test_data = np.asarray(read_file(test_file))
+
+    training_labels = training_data[:, -1]
+    test_labels = test_data[:, -1]
+
+    n_train_data = normalize(training_data[:, :-1])
+    n_test_data = normalize(test_data[:, :-1])
+
+    global D, N, Classes, U
+    D = np.shape(training_data)[1] - 1
+    N = np.shape(training_data)[0]
+    Classes = len(np.unique(training_labels))
+
+    t_train = fixLabels(training_labels)
+    t_test = fixLabels(test_labels)
+
+    P = generateLayers(layers, units_per_layer)
+
+    #print([len(p.perceptrons[0].w) for p in P])
+
+    for r in range(rounds):
+        for n in range(len(n_train_data)):
+            x = n_train_data[n]
+
+            feed_forward(P, x)
+
+            for l in range(1, layers):
+                for j, P_j in enumerate(P[l].perceptrons):
+                    P_j.a = np.dot(P_j.w, [p.z for p in P[l-1].perceptrons])
+                    P_j.z = P_j._h(P_j.a)
+
+            for j, P_out_j in enumerate(P[-1].perceptrons):
+                P_out_j.delta = (
+                    P_out_j.z - t_train[n][j]) * P_out_j.z * (1-P_out_j.z)
+
+            for l in range(layers - 2, 0, -1):
+                for j, P_j in enumerate(P[l].perceptrons):
+                    new_delta = 0
+                    for u, P_u in enumerate(P[l+1].perceptrons):
+                        new_delta += P_u.delta * P_u.w[j]
+                    new_delta *= P_j.z * (1-P_j.z)
+                    P_j.delta = new_delta
+
+            for l in range(1, layers):
+                for j, P_j in enumerate(P[l].perceptrons):
+                    for i, P_i in enumerate(P[l-1].perceptrons):
+                        P_j.w[i] -= learning_rate * P_j.delta * P_i.z
+
+        learning_rate *= 0.98
+    #print("finished learning")
+
+    acc = 0
+    for n in range(len(n_test_data)):
+        x = n_test_data[n]
+        np.insert(x, 0, 1)
+
+        cl = feed_forward(P, x)
+
+        this_acc = 0
+        if cl[0] == test_labels[n]:
+            acc += 1
+            this_acc = 1
+
+        print("ID = {:5d}, predicted = {:3d}, true = {:3d}, accuracy = {:4.2f}".format(
+            int(n + 1), int(cl[0]), int(test_labels[n]), float(this_acc)))
+
+    print("classification accuracy: {:6.4f}".format(acc / len(n_test_data)))
+
+
+def feed_forward(P, x):
+
+    for i in range(D):
+        P[0].perceptrons[i].z = x[i]
+
+    for l in range(1, len(P)):
+        for P_j in P[l].perceptrons:
+            P_j.a = np.dot(P_j.w, [p.z for p in P[l-1].perceptrons])
+            P_j.z = P_j._h(P_j.a)
+
+    #print(sum([p.z for p in P[-1].perceptrons]))
+
+    cl = (-1, -1)
+    for i, z in enumerate([p.z for p in P[-1].perceptrons]):
+        if z > cl[1]:
+            cl = (i, z)
+
+    return cl
+
+
+def fixLabels(labels):
+    global Classes
+    new = []
+    for t in labels:
+        l = [0] * Classes
+        l[int(t)] = 1
+        new.append(l)
+
+    return new
+
+
+def generateLayers(layers, units_per_layer):
+    global D, Classes, U
+    P = []
+    # add input layer
+    l1 = layer()
+    for i in range(D):
+        U += 1
+        # D + 1 for bias
+        _p = perceptron(D+1)
+        _p.bias = 0
+        l1.perceptrons.append(_p)
+
+    P.append(l1)
+
+    # add hidden layers
+    for i in range(layers-2):
+        lay = layer()
+        for _ in range(units_per_layer):
+            U += 1
+            lay.perceptrons.append(perceptron(len(P[-1].perceptrons)))
+        P.append(lay)
+
+    ln = layer()
+    for i in range(Classes):
+        U += 1
+        ln.perceptrons.append(perceptron(len(P[-1].perceptrons)))
+    P.append(ln)
+    return P
+
+
 def normalize(arr):
     a = np.asarray(arr)
     _max = np.amax(a)
@@ -23,38 +194,5 @@ def read_file(fname):
 
     return lines
 
-class NeuralNetwork:
-    def __init__(self, x, y):
-        self.input      = x
-        self.weights1   = np.random.rand(self.input.shape[1],4) 
-        self.weights2   = np.random.rand(4,1)                 
-        self.y          = y
-        self.output     = np.zeros(self.y.shape)
 
-    def feedforward(self):
-        self.layer1 = sigmoid(np.dot(self.input, self.weights1))
-        self.output = sigmoid(np.dot(self.layer1, self.weights2))
-
-    def backprop(self):
-        # application of the chain rule to find derivative of the loss function with respect to weights2 and weights1
-        d_weights2 = np.dot(self.layer1.T, (2*(self.y - self.output) * sigmoid_derivative(self.output)))
-        d_weights1 = np.dot(self.input.T,  (np.dot(2*(self.y - self.output) * sigmoid_derivative(self.output), self.weights2.T) * sigmoid_derivative(self.layer1)))
-
-        # update the weights with the derivative (slope) of the loss function
-        self.weights1 += d_weights1
-        self.weights2 += d_weights2
-
-
-if __name__ == "__main__":
-    X = np.array([[0,0,1],
-                  [0,1,1],
-                  [1,0,1],
-                  [1,1,1]])
-    y = np.array([[0],[1],[1],[0]])
-    nn = NeuralNetwork(X,y)
-
-    for i in range(1500):
-        nn.feedforward()
-        nn.backprop()
-
-    print(nn.output)
+main()

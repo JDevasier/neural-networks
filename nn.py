@@ -166,13 +166,6 @@ def main():
 # number of perceptrons of input layer = # of dimensions
 
 
-def printStructure(P):
-    print("P has {} layers:".format(len(P)))
-    for l in P:
-        print("Layer {} has {} perceptrons, each with {} weights".format(l, len(
-            l.perceptrons), len(l.perceptrons[0].w)))
-
-
 def neural_network(training_file, test_file, layers, units_per_layer, rounds):
     learning_rate = 1
 
@@ -194,6 +187,9 @@ def neural_network(training_file, test_file, layers, units_per_layer, rounds):
     t_test = fixLabels(test_labels)
 
     network = neuralnetwork(D, units_per_layer, Classes)
+
+    print(network.hidden.perceptrons[0].inputs)
+
     for r in range(rounds):
         for i in range(len(n_train_data)):
             network.train(n_train_data[i], t_train[i])
